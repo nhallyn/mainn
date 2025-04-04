@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hello Gorgeous</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Poppins', sans-serif;
+      background-color: #ffebf0; /* Soft pink background */
+      color: #333;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      color: #f06292; /* Cute pink color */
+      margin-bottom: 20px;
+      font-family: 'Dancing Script', cursive;
+    }
+
+    video, canvas {
+      width: 100%;
+      max-width: 500px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    #video {
+      transform: scaleX(-1); /* Mirror the live video */
+    }
+
+    button {
+      margin: 10px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 50px; /* Round buttons */
+      background-color: #f06292;
+      color: white;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    button:hover {
+      background-color: #ec407a; /* Hover effect */
+      transform: scale(1.1); /* Slight zoom effect on hover */
+    }
+
+    .filters, .actions, .modes, .frame-options {
+      margin-top: 15px;
+    }
+
+    .countdown {
+      font-size: 40px;
+      font-weight: bold;
+      color: #ff4081; /* Cute pinkish red for countdown */
+      margin-top: 10px;
+      font-family: 'Dancing Script', cursive;
+    }
+
+    .modes button {
+      background-color: #81c784; /* Light green background */
+    }
+
+    .modes button:hover {
+      background-color: #66bb6a;
+    }
+
+    .filters button {
+      background-color: #80deea; /* Light blue background */
+    }
+
+    .filters button:hover {
+      background-color: #4dd0e1;
+    }
+
+    .actions button {
+      background-color: #ffe082; /* Light yellow background */
+    }
+
+    .actions button:hover {
+      background-color: #ffb300;
+    }
+
+    .frame-options {
+      margin-top: 20px;
+    }
+
+    /* Border decorations */
+    .container {
+      border-radius: 20px;
+      border: 5px solid #f06292; /* Border color to match theme */
+      padding: 30px;
+      background-color: white;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .frame-preview {
+      margin-top: 10px;
+      border: 10px solid #f06292;
+      padding: 15px;
+      display: inline-block;
+      border-radius: 10px;
+      position: relative;
+    }
+
+    .frame-preview img {
+      max-width: 100%;
+      border-radius: 5px;
+    }
+
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&family=Dancing+Script&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>📸 Hello Gorgeous</h1>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <div class="modes">
+      <button onclick="startPhotoStrip(2)">Take 2 Shots</button>
+      <button onclick="startPhotoStrip(4)">Take 4 Shots</button>
+    </div>
+
+    <div class="actions">
+      <button onclick="retakePhoto()">Retake</button>
+      <button onclick="downloadPhoto()">Download</button>
+    </div>
+
+    <div class="filters">
+      <button onclick="applyFilter('none')">Reset</button>
+      <button onclick="applyFilter('grayscale(100%)')">Grayscale</button>
+      <button onclick="applyFilter('sepia(100%)')">Sepia</button>
+      <button onclick="applyFilter('invert(100%)')">Invert</button>
+      <button onclick="applyFilter('blur(3px)')">Blur</button>
+      <button onclick="applyFilter('brightness(1.4)')">Brighten</button>
+    </div>
+
+    <div class="frame-options">
+      <h2>Customize Frame</h2>
+      <label for="frameColor">Frame Color: </label>
+      <input type="color" id="frameColor" name="frameColor" value="#f06292"><br><br>
+
+      <label for="frameThickness">Frame Thickness (px): </label>
+      <input type="number" id="frameThickness" name="frameThickness" value="10"><br><br>
+
+      <label for="frameStyle">Frame Style: </label>
+      <select id="frameStyle">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="dotted">Dotted</option>
+      </select><br><br>
+
+      <button onclick="updateFramePreview()">Update Frame</button>
+    </div>
+
+    <div class="countdown" id="countdownDisplay"></div>
+
+    <div class="frame-preview" id="framePreview">
+      <img src="" id="stripPreview" style="display:none;"/>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const stripPreview = document.getElementById('stripPreview');
+    let currentFilter = 'none';
+    let countdownDisplay = document.getElementById('countdownDisplay');
+
+    // Requesting permission for camera and setting up the video feed
+    function startCamera() {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(err => {
+            console.error("Error accessing webcam:", err);
+            alert("Unable to access webcam. Please ensure your camera is connected.");
+          });
+      } else {
+        alert("Your browser does not support camera access.");
+      }
+    }
+
+    startCamera();  // Initialize the camera on page load
+
+    function applyFilter(filter) {
+      currentFilter = filter;
+      video.style.filter = filter;
+    }
+
+    function startPhotoStrip(shotsCount) {
+      let shots = [];
+      let interval = 1000;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      let shotIndex = 0;
+
+      canvas.width = width;
+      canvas.height = height * shotsCount;
+
+      const takeShot = () => {
+        if (shotIndex >= shotsCount) {
+          drawStrip(shots, width, height);
+          return;
+        }
+
+        // Countdown before taking the shot
+        let countdown = 5;
+        countdownDisplay.innerText = countdown;
+
+        const countdownInterval = setInterval(() => {
+          countdown--;
+          countdownDisplay.innerText = countdown;
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            // After countdown, take the shot
+            let tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            let tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.setTransform(-1, 0, 0, 1, width, 0); // mirror flip back
+            tempCtx.filter = currentFilter;
+            tempCtx.drawImage(video, 0, 0, width, height);
+
+            shots.push(tempCanvas);
+            shotIndex++;
+
+            setTimeout(takeShot, interval); // Proceed to next shot after the interval
+          }
+        }, 1000);
+      };
+
+      takeShot();
+    }
+
+    function drawStrip(shots, width, height) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      shots.forEach((shot, i) => {
+        ctx.drawImage(shot, 0, i * height);
+      });
+
+      // Apply frame style
+      const frameColor = document.getElementById('frameColor').value;
+      const frameThickness = document.getElementById('frameThickness').value;
+      const frameStyle = document.getElementById('frameStyle').value;
+
+      ctx.lineWidth = frameThickness;
+      ctx.strokeStyle = frameColor;
+      ctx.setLineDash(frameStyle === 'dashed' ? [10, 10] : frameStyle === 'dotted' ? [2, 4] : []);
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // Update preview strip
+      stripPreview.src = canvas.toDataURL('image/png');
+      stripPreview.style.display = 'block';
+
+      video.style.display = 'none';
+      canvas.style.display = 'block';
+    }
+
+    function updateFramePreview() {
+      if (canvas.style.display !== 'none') {
+        drawStrip([], video.videoWidth, video.videoHeight);
+      }
+    }
+
+    function retakePhoto() {
+      video.style.display = 'block';
+      canvas.style.display = 'none';
+      countdownDisplay.innerText = '';
+    }
+
+    function downloadPhoto() {
+      if (canvas.style.display === 'none') {
+        alert("Please take a photo strip first!");
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = 'photo_strip.png';
+      link.click();
+    }
+  </script>
+</body>
+</html>
